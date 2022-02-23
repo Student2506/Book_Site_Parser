@@ -5,7 +5,7 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit, unquote
 
 
 # url = 'http://tululu.org/txt.php?id=32168'
@@ -15,6 +15,24 @@ logger = logging.getLogger(__name__)
 URL_BASE = 'http://tululu.org/'
 DOWNLOAD_PART = 'txt.php?id='
 DESCRIPTION_PART = 'b'
+
+
+def download_image(session, url, filename, folder='images/'):
+    response = session.get(url)
+    response.raise_for_status()
+
+    try:
+        check_for_redirect(response)
+    except requests.HTTPError:
+        return
+
+    Path(folder).mkdir(parents=True, exist_ok=True)
+    parent = Path(folder)
+    filepath = parent / sanitize_filename(filename)
+
+    with open(filepath, 'w+b') as f:
+        f.write(response.content)
+    return filepath
 
 
 def download_txt(session, url, filename, folder='books/'):
@@ -73,11 +91,13 @@ def main():
             raw_img_url = soup.find(
                 'body'
             ).find('div', class_='bookimage').find('img')['src']
-            full_img_url = urljoin(url, raw_img_url)
+            full_img_url = unquote(urljoin(url, raw_img_url))
             logger.debug(full_img_url)
 
             download_url = urljoin(URL_BASE, (DOWNLOAD_PART + str(book_id)))
             logger.debug(download_txt(session, download_url, title))
+            image_filename = Path(urlsplit(full_img_url).path).name
+            logger.debug(download_image(session, full_img_url, image_filename))
 
 
 if __name__ == '__main__':
