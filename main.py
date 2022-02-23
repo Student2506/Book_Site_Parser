@@ -1,12 +1,11 @@
 import logging
 from pathlib import Path
+from urllib.parse import unquote, urljoin, urlsplit
 
 import requests
 from bs4 import BeautifulSoup
-from pathvalidate import sanitize_filename
-from urllib.parse import urljoin, urlsplit, unquote
 from configargparse import ArgParser
-
+from pathvalidate import sanitize_filename
 
 FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 logger = logging.getLogger(__name__)
