@@ -102,9 +102,11 @@ def main():
             ).find_all(
                 'span', class_='black'
             )
-            for comment in comments:
-                logger.debug(comment.text)
-
+            comments = [comment.text for comment in comments]
+            logger.debug(comments)
+            genres = soup.find('span', class_='d_book').find_all('a')
+            genres = [genre.text for genre in genres]
+            logger.debug(genres)
 
 
 if __name__ == '__main__':
