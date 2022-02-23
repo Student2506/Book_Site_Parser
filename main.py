@@ -93,11 +93,18 @@ def main():
             ).find('div', class_='bookimage').find('img')['src']
             full_img_url = unquote(urljoin(url, raw_img_url))
             logger.debug(full_img_url)
-
             download_url = urljoin(URL_BASE, (DOWNLOAD_PART + str(book_id)))
             logger.debug(download_txt(session, download_url, title))
             image_filename = Path(urlsplit(full_img_url).path).name
             logger.debug(download_image(session, full_img_url, image_filename))
+            comments = soup.find(
+                'div', id='content'
+            ).find_all(
+                'span', class_='black'
+            )
+            for comment in comments:
+                logger.debug(comment.text)
+
 
 
 if __name__ == '__main__':
