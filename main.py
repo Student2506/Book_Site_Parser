@@ -1,14 +1,13 @@
 import logging
-import random
 from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
 from urllib.parse import urljoin, urlsplit, unquote
+from configargparse import ArgParser
 
 
-# url = 'http://tululu.org/txt.php?id=32168'
 FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 logger = logging.getLogger(__name__)
 
@@ -48,12 +47,7 @@ def download_txt(session, url, filename, folder='books/'):
     """
     response = session.get(url)
     response.raise_for_status()
-
-    try:
-        check_for_redirect(response)
-    except requests.HTTPError:
-        return
-
+    check_for_redirect(response)
     Path(folder).mkdir(parents=True, exist_ok=True)
     parent = Path(folder)
     filepath = parent / sanitize_filename(filename+'.txt')
@@ -98,10 +92,18 @@ def parse_book_page(html_content, book_id, url):
 
 
 def main():
+    parser = ArgParser()
+    parser.add(
+        '--start-id', required=True, type=int, help='Begining ID to download'
+    )
+    parser.add(
+        '--end-id', required=True, type=int, help='Ending ID to download'
+    )
+    options = parser.parse_args()
+
     logging.basicConfig(level=logging.DEBUG, format=FORMAT)
     with requests.Session() as session:
-        for book_id in range(1, 10):
-            # book_id = random.randint(10000, 50000)
+        for book_id in range(options.start_id, options.end_id):
             url = urljoin(URL_BASE, (DESCRIPTION_PART + str(book_id) + '/'))
             response = session.get(url, allow_redirects=True)
             response.raise_for_status()
@@ -111,9 +113,14 @@ def main():
             except requests.HTTPError:
                 continue
             book = parse_book_page(response.text, book_id, url)
-            logger.debug(
-                download_txt(session, book['download_url'], book['title'])
-            )
+
+            try:
+                logger.debug(
+                    download_txt(session, book['download_url'], book['title'])
+                )
+            except requests.HTTPError:
+                continue
+
             logger.debug(
                 download_image(
                     session, book['full_img_url'], book['image_filename']
