@@ -69,6 +69,34 @@ def check_for_redirect(response):
         raise requests.HTTPError()
 
 
+def parse_book_page(html_content, book_id, url):
+    book = {}
+    soup = BeautifulSoup(html_content, 'lxml')
+
+    title_tag = soup.find('body').find('div', id='content').find('h1')
+    book['title'] = f'{str(book_id)}. {title_tag.text.split("::")[0].rstrip()}'
+    book['author'] = title_tag.find('a').text
+    logger.debug(book['author'])
+    raw_img_url = soup.find(
+        'body'
+    ).find('div', class_='bookimage').find('img')['src']
+    book['full_img_url'] = unquote(urljoin(url, raw_img_url))
+    logger.debug(book['full_img_url'])
+    book['download_url'] = urljoin(URL_BASE, (DOWNLOAD_PART + str(book_id)))
+    book['image_filename'] = Path(urlsplit(book['full_img_url']).path).name
+    comments = soup.find(
+        'div', id='content'
+    ).find_all(
+        'span', class_='black'
+    )
+    book['comments'] = [comment.text for comment in comments]
+    logger.debug(book['comments'])
+    genres = soup.find('span', class_='d_book').find_all('a')
+    book['genres'] = [genre.text for genre in genres]
+    logger.debug(book['genres'])
+    return book
+
+
 def main():
     logging.basicConfig(level=logging.DEBUG, format=FORMAT)
     with requests.Session() as session:
@@ -82,31 +110,16 @@ def main():
                 check_for_redirect(response)
             except requests.HTTPError:
                 continue
-
-            soup = BeautifulSoup(response.text, 'lxml')
-            title_tag = soup.find('body').find('div', id='content').find('h1')
-            title = f'{str(book_id)}. {title_tag.text.split("::")[0].rstrip()}'
-            author_tag = title_tag.find('a').text
-            logger.debug(author_tag)
-            raw_img_url = soup.find(
-                'body'
-            ).find('div', class_='bookimage').find('img')['src']
-            full_img_url = unquote(urljoin(url, raw_img_url))
-            logger.debug(full_img_url)
-            download_url = urljoin(URL_BASE, (DOWNLOAD_PART + str(book_id)))
-            logger.debug(download_txt(session, download_url, title))
-            image_filename = Path(urlsplit(full_img_url).path).name
-            logger.debug(download_image(session, full_img_url, image_filename))
-            comments = soup.find(
-                'div', id='content'
-            ).find_all(
-                'span', class_='black'
+            book = parse_book_page(response.text, book_id, url)
+            logger.debug(
+                download_txt(session, book['download_url'], book['title'])
             )
-            comments = [comment.text for comment in comments]
-            logger.debug(comments)
-            genres = soup.find('span', class_='d_book').find_all('a')
-            genres = [genre.text for genre in genres]
-            logger.debug(genres)
+            logger.debug(
+                download_image(
+                    session, book['full_img_url'], book['image_filename']
+                )
+            )
+            logger.debug(f'book DICT: {book}')
 
 
 if __name__ == '__main__':
