@@ -43,7 +43,7 @@ def download_txt(session, book, folder='books/'):
     Path(folder).mkdir(parents=True, exist_ok=True)
     parent = Path(folder)
     filepath = parent / sanitize_filename(f'{filename}.txt')
-    with open(filepath, 'w') as f:
+    with open(filepath, 'w', encoding='utf-8') as f:
         f.write(response.text)
     return filepath
 
@@ -67,7 +67,7 @@ def parse_book_page(html_content, book_id, url):
     full_img_url = unquote(urljoin(url, raw_img_url))
     genres = soup.find('span', class_='d_book').find_all('a')
     book = {
-        'title': f'{book_id}. {title_tag.text.split("::")[0].rstrip()}',
+        'title': f'{title_tag.text.split("::")[0].rstrip()}',
         'author': title_tag.find('a').text,
         'full_img_url': unquote(urljoin(url, raw_img_url)),
         'download_url': 'http://tululu.org/txt.php',

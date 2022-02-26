@@ -3,3 +3,8 @@
 env/
 images/
 books/
+*.json
+bs4_tutorial.py
+hlam.py
+.vscode/
+__pycache__/
