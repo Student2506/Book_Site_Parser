@@ -1,5 +1,6 @@
 import json
 import logging
+from shutil import move
 from pathlib import Path
 from urllib.parse import unquote, urljoin
 
@@ -52,7 +53,7 @@ def main():
     )
     parser.add('--begin_page', type=int, default=1, help='Start page')
     parser.add('--end_page', type=int, help='End Page')
-    parser.add('--dest_folder', type=str, help='Specify folder')
+    parser.add('--dest_folder', type=str, default='', help='Specify folder')
     parser.add(
         '--skip_imgs',
         action='store_false',
@@ -88,12 +89,18 @@ def main():
                 if options.skip_txt:
                     if options.dest_folder:
                         download_txt(session, book, txts)
+                        book['book_path'] = book['book_path'].replace(
+                            options.dest_folder, ''
+                        )
                     else:
                         download_txt(session, book)
                 imgs = Path(options.dest_folder) / 'images'
                 if options.skip_imgs:
                     if options.dest_folder:
                         download_image(session, book, imgs)
+                        book['img_src'] = book['img_src'].replace(
+                            options.dest_folder, ''
+                        )
                     else:
                         download_image(session, book)
                 for value in (
@@ -106,9 +113,13 @@ def main():
                 continue
 
             logger.debug(f'book DICT: {book}')
-        if options.dest_folder:
-            options.json_path = options.dest_folder + options.json_path
+
         json.dump(books_json, options.json_path, ensure_ascii=False)
+        if options.dest_folder:
+            current_name = options.json_path.name
+            options.json_path.close()
+            new_name = Path(options.dest_folder) / current_name
+            move(current_name, new_name)
 
 
 if __name__ == '__main__':
