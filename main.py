@@ -11,16 +11,18 @@ FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 logger = logging.getLogger(__name__)
 
 
-def download_image(session, url, filename, folder='images/'):
+def download_image(session, book, folder='images/'):
+    url = book['full_img_url']
+    filename = book['image_filename']
+    book['img_src'] = Path(folder) / sanitize_filename(filename)
     response = session.get(url)
     response.raise_for_status()
     check_for_redirect(response)
     Path(folder).mkdir(parents=True, exist_ok=True)
-    parent = Path(folder)
-    filepath = parent / sanitize_filename(filename)
-    with open(filepath, 'w+b') as f:
+    with open(str(book['img_src']), 'w+b') as f:
         f.write(response.content)
-    return filepath
+    book['img_src'] = book['img_src'].as_posix()
+    return book['img_src']
 
 
 def download_txt(session, book, folder='books/'):
@@ -45,7 +47,8 @@ def download_txt(session, book, folder='books/'):
     filepath = parent / sanitize_filename(f'{filename}.txt')
     with open(filepath, 'w', encoding='utf-8') as f:
         f.write(response.text)
-    return filepath
+    book['book_path'] = filepath.as_posix()
+    return book['book_path']
 
 
 def check_for_redirect(response):
@@ -55,20 +58,15 @@ def check_for_redirect(response):
 
 def parse_book_page(html_content, book_id, url):
     soup = BeautifulSoup(html_content, 'lxml')
-    title_tag = soup.find('body').find('div', id='content').find('h1')
-    comments = soup.find(
-        'div', id='content'
-    ).find_all(
-        'span', class_='black'
-    )
-    raw_img_url = soup.find(
-        'body'
-    ).find('div', class_='bookimage').find('img')['src']
+    title = soup.select_one('div#content > h1').text.split("::")[0].rstrip()
+    author = soup.select_one('div#content > h1 > a').text
+    comments = soup.select('div#content span.black')
+    raw_img_url = soup.select_one('div.bookimage > a > img')['src']
     full_img_url = unquote(urljoin(url, raw_img_url))
-    genres = soup.find('span', class_='d_book').find_all('a')
+    genres = soup.select('span.d_book a')
     book = {
-        'title': f'{title_tag.text.split("::")[0].rstrip()}',
-        'author': title_tag.find('a').text,
+        'title': title,
+        'author': author,
         'full_img_url': unquote(urljoin(url, raw_img_url)),
         'download_url': 'http://tululu.org/txt.php',
         'download_params': {'id': book_id},
@@ -103,7 +101,7 @@ def main():
                 )
                 logger.debug(
                     download_image(
-                        session, book['full_img_url'], book['image_filename']
+                        session, book
                     )
                 )
             except requests.HTTPError:

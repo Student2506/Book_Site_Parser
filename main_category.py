@@ -1,38 +1,41 @@
 import json
 import logging
+from urllib.parse import unquote, urljoin
 
 import requests
 from bs4 import BeautifulSoup
 from configargparse import ArgParser
-from urllib.parse import unquote, urljoin
-from pathlib import PurePosixPath
 
-from main import download_image, download_txt, check_for_redirect
-from main import parse_book_page
-
+from main import check_for_redirect, download_image, download_txt   # noqa
+from main import parse_book_page                                    # noqa
+                                                                    # noqa
 FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 logger = logging.getLogger(__name__)
 
 
-def download_category(cat_id, page_qty):
+def download_category(cat_id, start_page, end_page):
     url = f'http://tululu.org/l{cat_id}/'
-    pages_list = [url + str(i) + '/' for i in range(1, page_qty+1)]
+    with requests.Session() as session:
+        response = session.get(url)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'lxml')
+        last_page = soup.select_one('div#content a.npage:last-child').text
+        if end_page is None or end_page > int(last_page):
+            end_page = int(last_page)
+
+    pages_list = [url + str(i) + '/' for i in range(start_page, end_page+1)]
     final_book_urls = []
     with requests.Session() as session:
         for page in pages_list:
             response = session.get(page)
             response.raise_for_status()
             soup = BeautifulSoup(response.text, 'lxml')
-            raw_imgs = soup.find(
-                'div', id='content'
-            ).find_all(
-                'div', class_='bookimage'
-            )
-            book_urls2 = [img.find('a')['href'] for img in raw_imgs]
+            img_urls = soup.select('div#content div.bookimage > a')
+            book_urls2 = [a['href'] for a in img_urls]
             full_book_urls2 = [
                 (
                     unquote(urljoin(url, book_url)),
-                    book_url[2:]
+                    book_url[2:-1]
                 ) for book_url in book_urls2
             ]
             final_book_urls += full_book_urls2
@@ -46,35 +49,31 @@ def main():
     parser.add(
         '--category', required=True, type=int, help='category id to download'
     )
-    parser.add(
-        '--quantity',
-        required=False,
-        type=int,
-        default=1,
-        help='Page quantity'
-    )
+    parser.add('--begin_page', type=int, default=1, help='Start page')
+    parser.add('--end_page', type=int, help='End Page')
     options = parser.parse_args()
-    books = download_category(options.category, options.quantity)
+    books = download_category(
+        options.category, options.begin_page, options.end_page
+    )
     books_json = []
     with requests.Session() as session:
         for url, book_id in books:
-            book_id = book_id.rstrip('/')
             try:
                 response = session.get(url, allow_redirects=True)
                 response.raise_for_status()
                 check_for_redirect(response)
                 book = parse_book_page(response.text, book_id, url)
-                book['book_path'] = str(PurePosixPath(download_txt(session, book)))
+                logger.debug(
+                    (download_txt(session, book))
+                )
                 logger.debug(book['book_path'])
                 logger.debug(
-                    download_image(
-                        session, book['full_img_url'], book['image_filename']
-                    )
+                    download_image(session, book)
                 )
-                book['img_src'] = 'images/' + book.pop('image_filename')
-                # book['image_filename'] = 'images/' + book['image_filename']
-                book['title'] = book['title']
-                for value in ('full_img_url', 'download_url', 'download_params'):
+                for value in (
+                    'full_img_url', 'download_url', 'download_params',
+                    'image_filename'
+                ):
                     del book[value]
                 books_json.append(book)
             except requests.HTTPError:
