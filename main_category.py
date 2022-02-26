@@ -1,10 +1,11 @@
 import json
 import logging
+from pathlib import Path
 from urllib.parse import unquote, urljoin
 
 import requests
 from bs4 import BeautifulSoup
-from configargparse import ArgParser
+from configargparse import ArgParser, FileType
 
 from main import check_for_redirect, download_image, download_txt   # noqa
 from main import parse_book_page                                    # noqa
@@ -51,6 +52,26 @@ def main():
     )
     parser.add('--begin_page', type=int, default=1, help='Start page')
     parser.add('--end_page', type=int, help='End Page')
+    parser.add('--dest_folder', type=str, help='Specify folder')
+    parser.add(
+        '--skip_imgs',
+        action='store_false',
+        default=True,
+        help='Pass on images download'
+    )
+    parser.add(
+        '--skip_txt',
+        action='store_false',
+        default=True,
+        help='Pass on texts download'
+    )
+    parser.add(
+        '--json_path',
+        type=FileType('w', encoding='utf-8'),
+        default='books_catalog.json',
+        help='End Page'
+    )
+
     options = parser.parse_args()
     books = download_category(
         options.category, options.begin_page, options.end_page
@@ -63,13 +84,18 @@ def main():
                 response.raise_for_status()
                 check_for_redirect(response)
                 book = parse_book_page(response.text, book_id, url)
-                logger.debug(
-                    (download_txt(session, book))
-                )
-                logger.debug(book['book_path'])
-                logger.debug(
-                    download_image(session, book)
-                )
+                txts = Path(options.dest_folder) / 'books'
+                if options.skip_txt:
+                    if options.dest_folder:
+                        download_txt(session, book, txts)
+                    else:
+                        download_txt(session, book)
+                imgs = Path(options.dest_folder) / 'images'
+                if options.skip_imgs:
+                    if options.dest_folder:
+                        download_image(session, book, imgs)
+                    else:
+                        download_image(session, book)
                 for value in (
                     'full_img_url', 'download_url', 'download_params',
                     'image_filename'
@@ -80,8 +106,9 @@ def main():
                 continue
 
             logger.debug(f'book DICT: {book}')
-        with open('books_catalog.json', 'w', encoding='utf-8') as f:
-            json.dump(books_json, f, ensure_ascii=False)
+        if options.dest_folder:
+            options.json_path = options.dest_folder + options.json_path
+        json.dump(books_json, options.json_path, ensure_ascii=False)
 
 
 if __name__ == '__main__':
