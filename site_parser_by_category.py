@@ -38,7 +38,7 @@ def main():
         '--json_path',
         type=FileType('w', encoding='utf-8'),
         default='books_catalog.json',
-        help='End Page'
+        help='File name to use for catalog'
     )
 
     options = parser.parse_args()
