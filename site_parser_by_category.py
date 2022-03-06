@@ -7,7 +7,7 @@ import requests
 from configargparse import ArgParser, FileType
 
 from download_api import check_for_redirect, download_image, download_txt
-from tululu_parsing_api import download_category, parse_book_page
+from tululu_parsing_api import parse_book_page, parse_category_page
 
 FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 logger = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ def main():
 
     options = parser.parse_args()
     with requests.Session() as session:
-        books = download_category(
+        books = parse_category_page(
             session, options.category, options.begin_page, options.end_page
         )
         books_json = []

@@ -25,7 +25,7 @@ def parse_book_page(html_content, book_id, url):
     return book
 
 
-def download_category(session, cat_id, start_page, end_page):
+def parse_category_page(session, cat_id, start_page, end_page):
     url = f'http://tululu.org/l{cat_id}/'
     response = session.get(url)
     response.raise_for_status()
