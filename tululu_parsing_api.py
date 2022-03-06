@@ -33,20 +33,22 @@ def parse_category_page(session, cat_id, start_page, end_page):
     last_page = soup.select_one('div#content a.npage:last-child').text
     if end_page is None or end_page > int(last_page):
         end_page = int(last_page)
-    pages_list = [url + str(i) + '/' for i in range(start_page, end_page+1)]
+    pages_list = [
+        url + str(page) + '/' for page in range(start_page, end_page+1)
+    ]
     final_book_urls = []
     for page in pages_list:
         response = session.get(page)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, 'lxml')
         img_urls = soup.select('div#content div.bookimage > a')
-        book_urls2 = [a['href'] for a in img_urls]
-        full_book_urls2 = [
+        book_urls = [a['href'] for a in img_urls]
+        book_full_urls = [
             (
                 unquote(urljoin(url, book_url)),
                 book_url[2:-1]
-            ) for book_url in book_urls2
+            ) for book_url in book_urls
         ]
-        final_book_urls += full_book_urls2
+        final_book_urls += book_full_urls
 
     return final_book_urls
