@@ -34,7 +34,7 @@ def parse_category_page(session, cat_id, start_page, end_page):
     if end_page is None or end_page > int(last_page):
         end_page = int(last_page)
     pages_list = [
-        url + str(page) + '/' for page in range(start_page, end_page+1)
+        f'{url}{page}/' for page in range(start_page, end_page+1)
     ]
     final_book_urls = []
     for page in pages_list:
