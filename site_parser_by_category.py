@@ -24,14 +24,14 @@ def main():
     parser.add('--dest_folder', type=str, default='', help='Specify folder')
     parser.add(
         '--skip_imgs',
-        action='store_false',
-        default=True,
+        action='store_true',
+        default=False,
         help='Pass on images download'
     )
     parser.add(
         '--skip_txt',
-        action='store_false',
-        default=True,
+        action='store_true',
+        default=False,
         help='Pass on texts download'
     )
     parser.add(
@@ -54,7 +54,7 @@ def main():
                 check_for_redirect(response)
                 book = parse_book_page(response.text, book_id, url)
                 txts = Path(options.dest_folder) / 'books'
-                if options.skip_txt:
+                if not options.skip_txt:
                     if options.dest_folder:
                         download_txt(session, book, txts)
                         book['book_path'] = book['book_path'].replace(
@@ -63,7 +63,7 @@ def main():
                     else:
                         download_txt(session, book)
                 imgs = Path(options.dest_folder) / 'images'
-                if options.skip_imgs:
+                if not options.skip_imgs:
                     if options.dest_folder:
                         download_image(session, book, imgs)
                         book['img_src'] = book['img_src'].replace(
