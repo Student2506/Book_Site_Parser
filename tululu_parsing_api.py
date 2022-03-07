@@ -27,12 +27,7 @@ def parse_book_page(html_content, book_id, url):
 
 def parse_category_page(session, cat_id, start_page, end_page):
     url = f'http://tululu.org/l{cat_id}/'
-    response = session.get(url)
-    response.raise_for_status()
-    soup = BeautifulSoup(response.text, 'lxml')
-    last_page = soup.select_one('div#content a.npage:last-child').text
-    if end_page is None or end_page > int(last_page):
-        end_page = int(last_page)
+    end_page = get_last_page_value(session, url, end_page)
     pages_list = [
         f'{url}{page}/' for page in range(start_page, end_page+1)
     ]
@@ -52,3 +47,13 @@ def parse_category_page(session, cat_id, start_page, end_page):
         final_book_urls += book_full_urls
 
     return final_book_urls
+
+
+def get_last_page_value(session, url, end_page):
+    response = session.get(url)
+    response.raise_for_status()
+    soup = BeautifulSoup(response.text, 'lxml')
+    last_page = soup.select_one('div#content a.npage:last-child').text
+    if end_page is None or end_page > int(last_page):
+        end_page = int(last_page)
+    return end_page
