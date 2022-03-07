@@ -56,6 +56,7 @@ def main():
                 response.raise_for_status()
                 check_for_redirect(response)
                 book = parse_book_page(response.text, book_id, url)
+                book['download_params']: {'id': book_id}
                 txts = Path(options.dest_folder) / 'books'
                 if not options.skip_txt:
                     download_txt(session, book, txts)

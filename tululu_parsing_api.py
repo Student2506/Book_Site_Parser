@@ -4,7 +4,7 @@ from urllib.parse import unquote, urljoin, urlsplit
 from bs4 import BeautifulSoup
 
 
-def parse_book_page(html_content, book_id, url):
+def parse_book_page(html_content, url):
     soup = BeautifulSoup(html_content, 'lxml')
     title = soup.select_one('div#content > h1').text.split("::")[0].rstrip()
     author = soup.select_one('div#content > h1 > a').text
@@ -17,7 +17,6 @@ def parse_book_page(html_content, book_id, url):
         'author': author,
         'full_img_url': unquote(urljoin(url, raw_img_url)),
         'download_url': 'http://tululu.org/txt.php',
-        'download_params': {'id': book_id},
         'image_filename': Path(urlsplit(full_img_url).path).name,
         'comments': [comment.text for comment in comments],
         'genres': [genre.text for genre in genres],
