@@ -61,7 +61,7 @@ def main():
                     book['book_path'] = download_txt(
                         session,
                         book['title'],
-                        book['download_url'],
+                        'http://tululu.org/txt.php',
                         {'id': book_id},
                         txts
                     )
@@ -74,7 +74,7 @@ def main():
                         imgs
                     )
                 for value in (
-                    'full_img_url', 'download_url', 'image_filename'
+                    'full_img_url', 'image_filename'
                 ):
                     del book[value]
                 books_json.append(book)

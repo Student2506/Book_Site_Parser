@@ -16,7 +16,6 @@ def parse_book_page(html_content, url):
         'title': title,
         'author': author,
         'full_img_url': unquote(urljoin(url, raw_img_url)),
-        'download_url': 'http://tululu.org/txt.php',
         'image_filename': Path(urlsplit(full_img_url).path).name,
         'comments': [comment.text for comment in comments],
         'genres': [genre.text for genre in genres],
