@@ -55,17 +55,26 @@ def main():
                 response = session.get(url, allow_redirects=True)
                 response.raise_for_status()
                 check_for_redirect(response)
-                book = parse_book_page(response.text, book_id, url)
-                book['download_params']: {'id': book_id}
+                book = parse_book_page(response.text, url)
                 txts = Path(options.dest_folder) / 'books'
                 if not options.skip_txt:
-                    download_txt(session, book, txts)
+                    book['book_path'] = download_txt(
+                        session,
+                        book['title'],
+                        book['download_url'],
+                        {'id': book_id},
+                        txts
+                    )
                 imgs = Path(options.dest_folder) / 'images'
                 if not options.skip_imgs:
-                    download_image(session, book, imgs)
+                    book['img_src'] = download_image(
+                        session,
+                        book['full_img_url'],
+                        book['image_filename'],
+                        imgs
+                    )
                 for value in (
-                    'full_img_url', 'download_url', 'download_params',
-                    'image_filename'
+                    'full_img_url', 'download_url', 'image_filename'
                 ):
                     del book[value]
                 books_json.append(book)
