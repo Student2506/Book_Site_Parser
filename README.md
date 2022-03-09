@@ -17,13 +17,13 @@ pip install -r requirements.txt
 
 Для запуска потребуется указать ключи
 ```
-python main.py --start-id 1 --end-id 10
+python site_parser_by_book.py --start-id 1 --end-id 10
 ```
 ключи указывают диапазон с какой по какую книгу скачать
 
 Вариант 2
 ```
-python main_category.py --category 55
+python site_parser_by_category.py --category 55
 ```
 где: 
 * --category - обязательный параметр, устанавливающий категорию, в которой надо скачать книги
